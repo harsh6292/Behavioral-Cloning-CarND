@@ -48,30 +48,35 @@ Also, the model.py file contains the code written to extract the training images
 The keras model I created consisted of total of 9 layers.
 
 * The first layer is the Cropping2D layer through which I cropped the image so that only the important parts of the image are seen by the model (The road, side lines etc). This eliminated the hood of the car and any scenery or sky from the image which is not relevant for the model.
-(modely.py line 138)
+(modely.py line 186)
 
 * The second layer consisted of Lambda normalization layer. This layer helps normalize the image which might have extreme pixel values at certain points.
-(model.py line 141)
+(model.py line 189)
 
-* The third, fourth and fifth layers are the convolution layers with increasing filter size of 8, 12 and 16 respectively. The filter size varied from 5x5 to 3x3 in the end. These layers use the RELU activation function to introduce nonlinearity.
-(model.py lines 145-154)
+* The third, fourth and fifth layers are the convolution layers with increasing filter size of 8, 12 and 16 respectively. The filter size varied from 5x5 to 3x3 in the end. These layers use the LeakyReLU activation function to introduce nonlinearity with little weights given to output values which does not pass threshold.
+(model.py lines 191-222)
 
 * The sixth layer is the flatten layer to convert convolution inputs into one single output.
-(model.py line 160)
+(model.py line 229)
 
 * After this, three Dense layers or fully connected layers were added.
-(model.py lines 161-165)
+(model.py lines 232-240)
+
 
 ##### Attempts to reduce overfitting in the model
 The model made use of flipped images in order to generalize better.
 
 I augmented my own training dataset with Udacity provided dataset in order to reduce overfitting and generalize better.
 
+I also used LeakyReLU and SpatialDropout layers in the model to reduce overfitting.
+
 I then ran the saved model.h5 file to be used with simulator to verify that the car is well inside the lanes and even if it touches the lane, the model brings it back to center of lane.
+
 
 ##### Model parameter tuning
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 172).
+The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 247).
+
 
 ##### Appropriate training data
 
@@ -94,9 +99,12 @@ This model was appropriate as it did not had so many features to work on but sim
 
 The validation loss now decreased considerably and performed well also in the simulator with some minor errors. I added more training data and data augmentation which improved the results in such a way that the car was now able to drive by itself with no errors.
 
+Lastly, I implemented LeakyReLU and SpatialDropout layers to further reduce overfitting and generalize better. This is evident when running the car in simulator in autonomous mode.
+
+
 ##### Final Model Architecture
 
-The final model architecture (model.py lines 135-165) consisted of a convolution neural network with the following layers and layer sizes:
+The final model architecture (model.py lines 170-244) consisted of a convolution neural network with the following layers and layer sizes:
 
 ![alt text][image1]
 
@@ -129,7 +137,7 @@ I also recorded some portion of data on second track so that model does not lear
 
 
 To augment the data set, I used the left and right image points too so that model can learn to steer back into position if it gets too much close to left or right track.
-(model.py lines 60-98)
+(model.py lines 70-107)
 
 
 I also flipped images and angles thinking that this would eliminate left-steering bias of track one. For example, here is an image that has been flipped:
@@ -139,8 +147,20 @@ I also flipped images and angles thinking that this would eliminate left-steerin
 ![alt text][image10]
 
 
-After the collection process, I had total of 18,714 images (including augmented images) for the model to train upon. I then preprocessed this data by first cropping the image and keeping only the relevant parts of the image. About 50 pixels from the top of the image were neglected and similarly 20 pixels from bottom were removed.
+After the collection process, I had total of 25,422 images (including augmented images) for the model to train upon. I then preprocessed this data by first cropping the image and keeping only the relevant parts of the image. About 50 pixels from the top of the image were neglected and similarly 20 pixels from bottom were removed.
 
-I used adam optimizer to train the model so that manually training the learning rate was not necessary. The ideal number of epochs (6) was found after running several runs. The loss first decreases and then increases by epoch 4 and then finally decreases as it reaches epoch 6. I used the Keras built-in fit method to train on the data while also setting the shuffle to true to shuffle the data so as to prevent model learning particular way of driving by seeing sequence of driving images.
+I used Adam optimizer to train the model so that manually training the learning rate was not necessary.
+(model.py line 247)
 
-I also used the validation feature of fit method and put aside 20% of the training data as validation set.
+The ideal number of epochs (10) was found after running several runs.
+I used the ModelCheckpoint method to automatically save the best model with least validation loss.
+(model.py line 251-252)
+
+I also used the generators for both training and validation sets to reduce memory consumption and process images in batches only.
+(model.py line 138-161, 261)
+
+The loss first decreases and then increases by epoch 4 and then finally decreases as it reaches epoch 8.
+
+I used the Keras built-in fit_generator method to train on the data and used generators to return batch size of 32 shuffled images.
+
+I also used train_test_split method from sklearn to split the training data and put aside 20% of the training data as validation set.
